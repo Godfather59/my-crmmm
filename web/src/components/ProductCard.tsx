@@ -11,7 +11,7 @@ export function ProductCard({ id, name, price, stock }: { id: string; name: stri
     <div className="flex flex-col rounded-lg border bg-card p-4 shadow-sm transition-transform hover:-translate-y-0.5">
       <div className="flex-1">
         <div className="text-sm text-muted-foreground">Stock: {stock}</div>
-        <div className="mt-1 truncate font-medium">{name}</div>
+        <div className="mt-1 truncate text-base font-medium">{name}</div>
       </div>
       <div className="mt-3 flex items-center justify-between">
         <div className="text-lg font-semibold">{price.toFixed(2)}</div>
@@ -23,7 +23,8 @@ export function ProductCard({ id, name, price, stock }: { id: string; name: stri
             }
             addLine(id, 1)
           }}
-          size="sm"
+          size="lg"
+          className="min-w-[88px] touch-manipulation"
           disabled={atMax}
         >
           Add
@@ -35,3 +36,4 @@ export function ProductCard({ id, name, price, stock }: { id: string; name: stri
     </div>
   )
 }
+

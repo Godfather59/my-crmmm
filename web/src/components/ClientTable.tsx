@@ -15,33 +15,35 @@ export function ClientTable() {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <Input className="max-w-sm" placeholder="Search clients" value={query} onChange={(e) => setQuery(e.target.value)} />
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <Input className="max-w-sm h-11" placeholder="Search clients" value={query} onChange={(e) => setQuery(e.target.value)} />
         <ClientForm onSubmit={addClient} submitLabel="Add Client" />
       </div>
       <div className="overflow-hidden rounded-md border">
-        <table className="w-full text-sm">
-          <thead className="bg-muted">
-            <tr>
-              <th className="px-3 py-2 text-left font-medium">Name</th>
-              <th className="px-3 py-2 text-left font-medium">Email</th>
-              <th className="px-3 py-2 text-left font-medium">Loyalty</th>
-              <th className="px-3 py-2 text-right font-medium">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((c) => (
-              <tr key={c.id} className="border-t">
-                <td className="px-3 py-2">{c.name}</td>
-                <td className="px-3 py-2">{c.email}</td>
-                <td className="px-3 py-2">{c.loyaltyPoints}</td>
-                <td className="px-3 py-2 text-right">
-                  <ClientForm existing={c} onSubmit={updateClient} submitLabel="Edit" variant="outline" />
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[520px] text-sm">
+            <thead className="bg-muted">
+              <tr>
+                <th className="px-3 py-2 text-left font-medium">Name</th>
+                <th className="px-3 py-2 text-left font-medium">Email</th>
+                <th className="px-3 py-2 text-left font-medium">Loyalty</th>
+                <th className="px-3 py-2 text-right font-medium">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filtered.map((c) => (
+                <tr key={c.id} className="border-t">
+                  <td className="px-3 py-2">{c.name}</td>
+                  <td className="px-3 py-2">{c.email}</td>
+                  <td className="px-3 py-2">{c.loyaltyPoints}</td>
+                  <td className="px-3 py-2 text-right">
+                    <ClientForm existing={c} onSubmit={updateClient} submitLabel="Edit" variant="outline" />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   )
@@ -56,7 +58,7 @@ function ClientForm({ existing, onSubmit, variant, submitLabel }: { existing?: C
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant={variant}>{submitLabel}</Button>
+        <Button variant={variant} className="h-11 px-4">{submitLabel}</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -72,15 +74,15 @@ function ClientForm({ existing, onSubmit, variant, submitLabel }: { existing?: C
         >
           <div>
             <Label htmlFor="name">Name</Label>
-            <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="h-11" />
           </div>
           <div>
             <Label htmlFor="email">Email</Label>
-            <Input id="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+            <Input id="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="h-11" />
           </div>
           <div>
             <Label htmlFor="phone">Phone</Label>
-            <Input id="phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+            <Input id="phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="h-11" />
           </div>
           <div>
             <Label htmlFor="points">Loyalty Points</Label>
@@ -89,10 +91,11 @@ function ClientForm({ existing, onSubmit, variant, submitLabel }: { existing?: C
               type="number"
               value={form.loyaltyPoints}
               onChange={(e) => setForm({ ...form, loyaltyPoints: Number(e.target.value) })}
+              className="h-11"
             />
           </div>
           <div className="pt-2">
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full h-12">
               Save
             </Button>
           </div>

@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useMemo, useReducer } from 'react'
-import { sampleClients, sampleEmployees, sampleProducts } from '../data/sample'
+import React, { createContext, useContext, useEffect, useMemo, useReducer, useState } from 'react'
+import { sampleClients, sampleEmployees, sampleOrders, sampleProducts } from '../data/sample'
+import { loadPersistedState, savePersistedState } from '../lib/storage'
 
 export type Product = {
   id: string
@@ -27,19 +28,39 @@ export type Employee = {
   role: string
 }
 
+export type OrderItem = {
+  productId: string
+  name: string
+  price: number
+  qty: number
+  exclusions?: string[]
+}
+
+export type Order = {
+  id: string
+  date: string
+  totals: { subtotal: number; tax: number; total: number }
+  items: OrderItem[]
+  clientId?: string
+}
+
 type State = {
   products: Product[]
   clients: Client[]
   employees: Employee[]
   cart: CartItem[]
+  orders: Order[]
 }
 
+type HydratePayload = Partial<Pick<State, 'products' | 'clients' | 'employees' | 'orders'>>
+
 type Action =
+  | { type: 'state/hydrate'; state: HydratePayload }
   | { type: 'cart/addLine'; productId: string; qty?: number; exclusions?: string[] }
   | { type: 'cart/removeLine'; id: string }
   | { type: 'cart/setQty'; id: string; qty: number }
   | { type: 'cart/updateExclusions'; id: string; exclusions: string[] }
-  | { type: 'cart/checkout' }
+  | { type: 'cart/checkout'; order: Order }
   | { type: 'client/add'; client: Client }
   | { type: 'client/update'; client: Client }
   | { type: 'employee/add'; employee: Employee }
@@ -49,11 +70,22 @@ const initialState: State = {
   products: sampleProducts,
   clients: sampleClients,
   employees: sampleEmployees,
+  orders: sampleOrders,
   cart: [],
 }
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
+    case 'state/hydrate': {
+      const next: State = {
+        ...state,
+        products: action.state.products ?? state.products,
+        clients: action.state.clients ?? state.clients,
+        employees: action.state.employees ?? state.employees,
+        orders: action.state.orders ?? state.orders,
+      }
+      return next
+    }
     case 'cart/addLine': {
       const product = state.products.find((p) => p.id === action.productId)
       if (!product) return state
@@ -69,16 +101,16 @@ function reducer(state: State, action: Action): State {
       return { ...state, cart }
     }
     case 'cart/checkout': {
-      // Decrement stock based on items in cart and clear cart
       const qtyById = new Map<string, number>()
-      for (const item of state.cart) qtyById.set(item.productId, (qtyById.get(item.productId) ?? 0) + item.qty)
+      const order = action.order
+      for (const item of order.items) qtyById.set(item.productId, (qtyById.get(item.productId) ?? 0) + item.qty)
       const products = state.products.map((p) => {
         const q = qtyById.get(p.id)
         if (!q) return p
         const newStock = Math.max(0, p.stock - q)
         return { ...p, stock: newStock }
       })
-      return { ...state, products, cart: [] }
+      return { ...state, products, cart: [], orders: [order, ...state.orders] }
     }
     case 'cart/removeLine': {
       return { ...state, cart: state.cart.filter((c) => c.id !== action.id) }
@@ -118,7 +150,7 @@ type Ctx = State & {
   removeLine: (lineId: string) => void
   setQty: (lineId: string, qty: number) => void
   updateExclusions: (lineId: string, exclusions: string[]) => void
-  checkout: () => void
+  checkout: (order: Order) => void
   addClient: (c: Client) => void
   updateClient: (c: Client) => void
   addEmployee: (e: Employee) => void
@@ -129,6 +161,25 @@ const AppContext = createContext<Ctx | null>(null)
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState)
+  const [hydrated, setHydrated] = useState(false)
+
+  useEffect(() => {
+    const persisted = loadPersistedState()
+    if (persisted) {
+      dispatch({ type: 'state/hydrate', state: persisted })
+    }
+    setHydrated(true)
+  }, [])
+
+  useEffect(() => {
+    if (!hydrated) return
+    savePersistedState({
+      products: state.products,
+      clients: state.clients,
+      employees: state.employees,
+      orders: state.orders,
+    })
+  }, [state.products, state.clients, state.employees, state.orders, hydrated])
 
   const value = useMemo<Ctx>(() => ({
     ...state,
@@ -136,7 +187,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     removeLine: (lineId) => dispatch({ type: 'cart/removeLine', id: lineId }),
     setQty: (lineId, qty) => dispatch({ type: 'cart/setQty', id: lineId, qty }),
     updateExclusions: (lineId, exclusions) => dispatch({ type: 'cart/updateExclusions', id: lineId, exclusions }),
-    checkout: () => dispatch({ type: 'cart/checkout' }),
+    checkout: (order) => dispatch({ type: 'cart/checkout', order }),
     addClient: (c) => dispatch({ type: 'client/add', client: c }),
     updateClient: (c) => dispatch({ type: 'client/update', client: c }),
     addEmployee: (e) => dispatch({ type: 'employee/add', employee: e }),
@@ -151,3 +202,4 @@ export function useApp() {
   if (!ctx) throw new Error('useApp must be used within AppProvider')
   return ctx
 }
+
