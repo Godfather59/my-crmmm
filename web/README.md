@@ -58,9 +58,8 @@ Report date ranges and export options live in `Reports.tsx`. Saved presets are s
 
 ## Security Notes
 
-- `npm audit fix` mitigates most vulnerabilities, but:
-  - `xlsx` currently has no patched version for CVE advisories (prototype pollution / ReDoS).
-  - Address remaining esbuild advisory by upgrading to the latest Vite/Vitest major once compatibility is verified.
+- Dependency audit passes with zero known vulnerabilities after removing `xlsx` (SheetJS), which previously carried HIGH advisories (prototype pollution / ReDoS). Excel export remains disabled until reintroduced with a safe approach.
+- Consider routine upgrades of build tooling (Vite/Vitest) after compatibility testing.
 
 ## License
 

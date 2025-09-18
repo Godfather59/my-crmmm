@@ -3,7 +3,6 @@ import { Input } from '../components/ui/input'
 import { ReportCharts, type RevenuePoint, type CategoryPoint } from '../components/ReportCharts'
 import { Button } from '../components/ui/button'
 import { useApp } from '../context/AppContext'
-import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog'
@@ -129,15 +128,7 @@ export function Reports() {
     }
   }, [orders, products, from, to])
 
-  const exportExcel = () => {
-    const wb = XLSX.utils.book_new()
-    const s1 = XLSX.utils.json_to_sheet(summary.revenue.map((r) => ({ Day: r.day, Revenue: r.value })))
-    const s2 = XLSX.utils.json_to_sheet(summary.categories.map((c) => ({ Category: c.name, Revenue: c.value })))
-    XLSX.utils.book_append_sheet(wb, s1, 'RevenueByDay')
-    XLSX.utils.book_append_sheet(wb, s2, 'SalesByCategory')
-    const filename = `reports_${from}_to_${to}.xlsx`
-    XLSX.writeFile(wb, filename)
-  }
+  
 
   const exportCSV = () => {
     const rows: Array<Array<string | number>> = [
@@ -273,8 +264,13 @@ export function Reports() {
           <Button variant="outline" onClick={exportCSV} disabled={!summary.revenue.length && !summary.categories.length}>
             Export CSV
           </Button>
-          <Button variant="outline" onClick={exportExcel} disabled={!summary.revenue.length && !summary.categories.length}>
-            Export Excel
+          <Button
+            variant="outline"
+            disabled
+            title="Excel export not implemented"
+            aria-disabled
+          >
+            Export Excel (disabled)
           </Button>
           <Button onClick={exportPDF} disabled={!summary.revenue.length && !summary.categories.length}>
             Export PDF
