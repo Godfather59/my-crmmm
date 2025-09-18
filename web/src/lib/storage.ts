@@ -1,12 +1,13 @@
-import type { Client, Employee, Order, Product } from '../context/AppContext'
+import type { Order, Product, Shift } from '../context/AppContext'
 
 const STORAGE_KEY = 'flowsuite-app-state@1'
 
 type PersistedState = {
   products: Product[]
-  clients: Client[]
-  employees: Employee[]
   orders: Order[]
+  currency?: string
+  shifts?: Shift[]
+  activeShiftId?: string | null
 }
 
 export function loadPersistedState(): PersistedState | null {
@@ -19,9 +20,10 @@ export function loadPersistedState(): PersistedState | null {
 
     return {
       products: parsed.products ?? [],
-      clients: parsed.clients ?? [],
-      employees: parsed.employees ?? [],
       orders: parsed.orders ?? [],
+      currency: parsed.currency,
+      shifts: parsed.shifts ?? [],
+      activeShiftId: parsed.activeShiftId ?? null,
     }
   } catch (error) {
     console.warn('Unable to load persisted state', error)

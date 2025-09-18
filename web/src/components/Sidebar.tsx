@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutGrid, ShoppingCart, Users2, BarChart3, Menu, ChevronLeft, X } from 'lucide-react'
+import { ShoppingCart, Menu, ChevronLeft, X } from 'lucide-react'
 import { Button } from './ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useLayout } from '../context/LayoutContext'
@@ -12,12 +12,7 @@ type NavItem = {
   roles: Array<'admin' | 'cashier'>
 }
 
-const navItems: NavItem[] = [
-  { to: '/', label: 'Dashboard', icon: LayoutGrid, roles: ['admin'] },
-  { to: '/pos', label: 'POS', icon: ShoppingCart, roles: ['admin', 'cashier'] },
-  { to: '/crm', label: 'CRM', icon: Users2, roles: ['admin'] },
-  { to: '/reports', label: 'Reports', icon: BarChart3, roles: ['admin'] },
-]
+const navItems: NavItem[] = [{ to: '/pos', label: 'POS', icon: ShoppingCart, roles: ['admin', 'cashier'] }]
 
 export function Sidebar() {
   const { sidebarCollapsed, setSidebarCollapsed, isMobile, setSidebarOpen } = useLayout()
@@ -49,7 +44,7 @@ export function Sidebar() {
           <NavLink
             key={to}
             to={to}
-            end={to === '/'}
+            end
             onClick={() => {
               if (isMobile) setSidebarOpen(false)
             }}

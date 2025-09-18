@@ -4,11 +4,14 @@ import { useApp, type Order, type OrderItem } from '../context/AppContext'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog'
 import { useToast } from './ToastProvider'
 import { useAuth } from '../context/AuthContext'
+import { useOnlineStatus } from '../hooks/useOnlineStatus'
 
 export function POSCart() {
-  const { cart, products, setQty, removeLine, checkout, updateExclusions } = useApp()
+  const { cart, products, setQty, removeLine, checkout, updateExclusions, shifts, activeShiftId } = useApp()
   const { user } = useAuth()
   const { toast } = useToast()
+  const online = useOnlineStatus()
+  const activeShift = activeShiftId ? shifts.find((shift) => shift.id === activeShiftId) ?? null : null
 
   const cashierName = user?.name ?? 'Cashier'
 
@@ -29,6 +32,7 @@ export function POSCart() {
 
   const [qr, setQr] = useState<string | null>(null)
   const [order, setOrder] = useState<Order | null>(null)
+  const [orderNote, setOrderNote] = useState('')
   const [customizing, setCustomizing] = useState<string | null>(null)
   const currentLine = customizing ? cart.find((l) => l.id === customizing) : undefined
   const currentLineProduct = currentLine ? products.find((p) => p.id === currentLine.productId) : undefined
@@ -67,9 +71,23 @@ export function POSCart() {
     const total = subtotal + tax
     const id = Math.random().toString(36).slice(2, 8).toUpperCase()
     const isoDate = new Date().toISOString()
-    const orderPayload: Order = { id, date: isoDate, items: snapshotItems, totals: { subtotal, tax, total } }
+    const note = orderNote.trim()
+    const syncedAt = online ? isoDate : null
+    const orderPayload: Order = {
+      id,
+      date: isoDate,
+      items: snapshotItems,
+      totals: { subtotal, tax, total },
+      note: note ? note : undefined,
+      syncedAt,
+    }
     checkout(orderPayload)
     setOrder(orderPayload)
+    setOrderNote('')
+    toast({
+      title: online ? 'Sale recorded' : 'Sale queued offline',
+      description: online ? 'Receipt is ready to print.' : 'Reconnect to sync this order with back office records.',
+    })
   }
 
   const receiptItems = order?.items ??
@@ -79,10 +97,23 @@ export function POSCart() {
     })
 
   const orderDateDisplay = order ? new Date(order.date).toLocaleString() : previewDateStr
+  const notePreview = order?.note ?? orderNote.trim()
 
   return (
     <div className="flex h-full flex-col rounded-lg border bg-white p-4 shadow-sm touch-manipulation dark:bg-slate-950">
-      <div className="mb-2 text-sm font-medium">Cart</div>
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-sm font-medium">
+        <span>Cart</span>
+        <span className="text-xs font-normal text-muted-foreground">
+          {activeShift
+            ? `Shift open since ${new Date(activeShift.openedAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })} (${activeShift.openedBy})`
+            : 'No active shift'}
+        </span>
+      </div>
+      {!online && (
+        <div className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-100">
+          Offline mode: sales are stored locally and will need syncing once you're back online.
+        </div>
+      )}
       <div className="flex-1 space-y-2 overflow-auto">
         {items.length === 0 && (
           <div className="text-sm text-muted-foreground">No items yet</div>
@@ -124,18 +155,34 @@ export function POSCart() {
       </div>
 
       <div className="space-y-3 pt-3">
-        <div className="flex justify-between text-base">
-          <span>Subtotal</span>
-          <span className="font-mono">{totals.subtotal.toFixed(2)}</span>
+        <div className="space-y-3">
+          <div className="flex justify-between text-base">
+            <span>Subtotal</span>
+            <span className="font-mono">{totals.subtotal.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between text-base">
+            <span>Tax</span>
+            <span className="font-mono">{totals.tax.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between text-lg font-semibold">
+            <span>Total</span>
+            <span className="font-mono">{totals.total.toFixed(2)}</span>
+          </div>
         </div>
-        <div className="flex justify-between text-base">
-          <span>Tax</span>
-          <span className="font-mono">{totals.tax.toFixed(2)}</span>
+
+        <div className="space-y-2">
+          <label htmlFor="order-note" className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Customer notes
+          </label>
+          <textarea
+            id="order-note"
+            value={orderNote}
+            onChange={(e) => setOrderNote(e.target.value)}
+            placeholder="e.g. Extra hot, no sugar."
+            className="h-20 w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          />
         </div>
-        <div className="flex justify-between text-lg font-semibold">
-          <span>Total</span>
-          <span className="font-mono">{totals.total.toFixed(2)}</span>
-        </div>
+
         <div className="flex flex-col gap-2 sm:flex-row">
           <Dialog>
             <DialogTrigger asChild>
@@ -188,6 +235,13 @@ export function POSCart() {
                   <div className="flex justify-between"><span>Tax</span><span className="font-mono">{(order?.totals.tax ?? totals.tax).toFixed(2)}</span></div>
                   <div className="mt-1 flex justify-between font-semibold"><span>Total</span><span className="font-mono">{(order?.totals.total ?? totals.total).toFixed(2)}</span></div>
                 </div>
+
+                {notePreview && (
+                  <div className="px-4 pb-2 text-left text-xs">
+                    <div className="font-semibold uppercase tracking-wide text-[10px] text-muted-foreground">Notes</div>
+                    <div className="mt-1 whitespace-pre-line">{notePreview}</div>
+                  </div>
+                )}
 
                 <div className="px-4 py-3 text-center text-xs">
                   {qr && (

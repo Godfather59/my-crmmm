@@ -1,14 +1,19 @@
 # FlowSuite Workspace
 
-FlowSuite is a demo CRM/POS dashboard built with React, TypeScript, and Vite. It showcases point-of-sale cart handling, client and employee management, business intelligence dashboards, and exportable reporting.
+FlowSuite is a demo point-of-sale workspace built with React, TypeScript, and Vite. It showcases cart handling, cashier-friendly touch UI, and lightweight sales insights.
 
 ## Features
 
 - **Role-based workspace** with Admin and Cashier personas, guarded routes, and a login screen.
-- **Inventory & cart management** including ingredient exclusions, stock enforcement, animated receipts, and QR payloads.\r\n- **Responsive shell** optimised for phones and touch POS terminals with mobile drawer navigation and enlarged controls.\r\n- **CRM tools** for adding/editing clients and employees in Radix-styled dialogs.
-- **Dashboard analytics** that aggregate persisted orders with selectable 7/30/90 day ranges and top product insights.
-- **Reporting suite** that exports to CSV, Excel, and PDF plus saved date presets stored locally.
-- **Local persistence** via `localStorage` for catalog data, customers, staff, orders, and workspace presets.
+- **Inventory & cart management** including ingredient exclusions, stock enforcement, animated receipts, and QR payloads.
+- **Printable POS audit trail** with a recent sales dialog cashiers can review or print without leaving the flow.
+- **Configurable POS currency display** so teams can switch formatting between common locales.
+- **Responsive shell** optimised for phones and touch POS terminals with mobile drawer navigation and enlarged controls.
+- **Embedded sales summary** inside the POS flow with seven-day stats and top product insights.
+- **Shift planner & reconciliation** with start/end workflows, variance capture, and drawer audits.
+- **Offline mode with queued sync** so cashiers can continue selling without connectivity and reconcile later.
+- **Order-level customer notes** preserved on receipts and audit trails.
+- **Local persistence** via `localStorage` for catalog data, cart state, orders, and currency preferences.
 - **Toast notifications and micro-interactions** powered by Framer Motion.
 
 ## Tech Stack
@@ -16,7 +21,6 @@ FlowSuite is a demo CRM/POS dashboard built with React, TypeScript, and Vite. It
 - React 19 + TypeScript + Vite 7
 - Tailwind CSS with custom theming and dark mode
 - Radix UI primitives (Dialog, Dropdown, Tabs)
-- Recharts, html2canvas, jsPDF, and SheetJS (`xlsx`) for reporting
 - Framer Motion for animations
 - Vitest + Testing Library for unit tests
 
@@ -27,10 +31,10 @@ npm install
 npm run dev
 ```
 
-The dev server runs on Vite (default http://localhost:5173). Log in as:
+The dev server runs on Vite (default http://localhost:5173). Log in as either role to reach the POS workspace:
 
-- **Administrator** for full access (Dashboard, CRM, Reports, POS)
-- **Cashier** for POS-only access
+- **Administrator**
+- **Cashier**
 
 ## Available Scripts
 
@@ -50,15 +54,11 @@ Vitest is configured in `vite.config.ts` with global test helpers from `src/setu
 
 ## Data Persistence
 
-`src/lib/storage.ts` syncs products, clients, employees, and orders to `localStorage`. Sample data seeds from `src/data/sample.ts` until overridden by user actions.
-
-## Reporting Presets
-
-Report date ranges and export options live in `Reports.tsx`. Saved presets are stored under the `flowsuite-report-presets@1` key in `localStorage`.
+`src/lib/storage.ts` syncs products, orders, shifts, active shift state, and currency preferences to `localStorage`. Sample data seeds from `src/data/sample.ts` until overridden by user actions.
 
 ## Security Notes
 
-- Dependency audit passes with zero known vulnerabilities after removing `xlsx` (SheetJS), which previously carried HIGH advisories (prototype pollution / ReDoS). Excel export remains disabled until reintroduced with a safe approach.
+- Dependency audit passes with zero known vulnerabilities after removing `xlsx` (SheetJS), which previously carried HIGH advisories (prototype pollution / ReDoS). Excel export has been removed; reintroduce it only with a vetted dependency.
 - Consider routine upgrades of build tooling (Vite/Vitest) after compatibility testing.
 
 ## License

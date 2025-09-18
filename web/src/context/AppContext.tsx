@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useReducer, useState } from 'react'
-import { sampleClients, sampleEmployees, sampleOrders, sampleProducts } from '../data/sample'
+import { sampleOrders, sampleProducts } from '../data/sample'
 import { loadPersistedState, savePersistedState } from '../lib/storage'
 
 export type Product = {
@@ -12,21 +12,6 @@ export type Product = {
 }
 
 export type CartItem = { id: string; productId: string; qty: number; exclusions?: string[] }
-
-export type Client = {
-  id: string
-  name: string
-  email: string
-  phone?: string
-  loyaltyPoints: number
-  orders: Array<{ id: string; total: number; date: string }>
-}
-
-export type Employee = {
-  id: string
-  name: string
-  role: string
-}
 
 export type OrderItem = {
   productId: string
@@ -42,17 +27,35 @@ export type Order = {
   totals: { subtotal: number; tax: number; total: number }
   items: OrderItem[]
   clientId?: string
+  note?: string
+  syncedAt?: string | null
+  shiftId?: string | null
+}
+
+export type Shift = {
+  id: string
+  openedAt: string
+  openedBy: string
+  openingFloat: number
+  openingNote?: string
+  closedAt?: string
+  closedBy?: string
+  closingCount?: number
+  systemExpected?: number
+  variance?: number
+  closingNote?: string
 }
 
 type State = {
   products: Product[]
-  clients: Client[]
-  employees: Employee[]
   cart: CartItem[]
   orders: Order[]
+  currency: string
+  shifts: Shift[]
+  activeShiftId: string | null
 }
 
-type HydratePayload = Partial<Pick<State, 'products' | 'clients' | 'employees' | 'orders'>>
+type HydratePayload = Partial<Pick<State, 'products' | 'orders' | 'currency' | 'shifts' | 'activeShiftId'>>
 
 type Action =
   | { type: 'state/hydrate'; state: HydratePayload }
@@ -61,17 +64,18 @@ type Action =
   | { type: 'cart/setQty'; id: string; qty: number }
   | { type: 'cart/updateExclusions'; id: string; exclusions: string[] }
   | { type: 'cart/checkout'; order: Order }
-  | { type: 'client/add'; client: Client }
-  | { type: 'client/update'; client: Client }
-  | { type: 'employee/add'; employee: Employee }
-  | { type: 'employee/update'; employee: Employee }
+  | { type: 'settings/setCurrency'; currency: string }
+  | { type: 'orders/markSynced'; ids: string[] }
+  | { type: 'shift/start'; shift: Shift }
+  | { type: 'shift/close'; shiftId: string; payload: { closedAt: string; closedBy: string; closingCount: number; systemExpected: number; variance: number; closingNote?: string } }
 
 const initialState: State = {
   products: sampleProducts,
-  clients: sampleClients,
-  employees: sampleEmployees,
   orders: sampleOrders,
   cart: [],
+  currency: 'USD',
+  shifts: [],
+  activeShiftId: null,
 }
 
 function reducer(state: State, action: Action): State {
@@ -80,9 +84,10 @@ function reducer(state: State, action: Action): State {
       const next: State = {
         ...state,
         products: action.state.products ?? state.products,
-        clients: action.state.clients ?? state.clients,
-        employees: action.state.employees ?? state.employees,
         orders: action.state.orders ?? state.orders,
+        currency: action.state.currency ?? state.currency,
+        shifts: action.state.shifts ?? state.shifts,
+        activeShiftId: action.state.activeShiftId ?? state.activeShiftId,
       }
       return next
     }
@@ -110,7 +115,42 @@ function reducer(state: State, action: Action): State {
         const newStock = Math.max(0, p.stock - q)
         return { ...p, stock: newStock }
       })
-      return { ...state, products, cart: [], orders: [order, ...state.orders] }
+      const orders = [order, ...state.orders]
+      return { ...state, products, cart: [], orders }
+    }
+    case 'orders/markSynced': {
+      const now = new Date().toISOString()
+      const ids = new Set(action.ids)
+      const orders = state.orders.map((order) =>
+        ids.has(order.id) ? { ...order, syncedAt: order.syncedAt ?? now } : order,
+      )
+      return { ...state, orders }
+    }
+    case 'shift/start': {
+      return {
+        ...state,
+        shifts: [action.shift, ...state.shifts],
+        activeShiftId: action.shift.id,
+      }
+    }
+    case 'shift/close': {
+      const shifts = state.shifts.map((shift) =>
+        shift.id === action.shiftId
+          ? {
+              ...shift,
+              closedAt: action.payload.closedAt,
+              closedBy: action.payload.closedBy,
+              closingCount: action.payload.closingCount,
+              systemExpected: action.payload.systemExpected,
+              variance: action.payload.variance,
+              closingNote: action.payload.closingNote,
+            }
+          : shift,
+      )
+      const orders = state.orders.map((order) =>
+        order.shiftId === action.shiftId ? { ...order, syncedAt: order.syncedAt ?? null } : order,
+      )
+      return { ...state, shifts, orders, activeShiftId: state.activeShiftId === action.shiftId ? null : state.activeShiftId }
     }
     case 'cart/removeLine': {
       return { ...state, cart: state.cart.filter((c) => c.id !== action.id) }
@@ -128,17 +168,8 @@ function reducer(state: State, action: Action): State {
         .filter((c) => c.qty > 0)
       return { ...state, cart }
     }
-    case 'client/add': {
-      return { ...state, clients: [action.client, ...state.clients] }
-    }
-    case 'client/update': {
-      return { ...state, clients: state.clients.map((c) => (c.id === action.client.id ? action.client : c)) }
-    }
-    case 'employee/add': {
-      return { ...state, employees: [action.employee, ...state.employees] }
-    }
-    case 'employee/update': {
-      return { ...state, employees: state.employees.map((e) => (e.id === action.employee.id ? action.employee : e)) }
+    case 'settings/setCurrency': {
+      return { ...state, currency: action.currency }
     }
     default:
       return state
@@ -151,10 +182,10 @@ type Ctx = State & {
   setQty: (lineId: string, qty: number) => void
   updateExclusions: (lineId: string, exclusions: string[]) => void
   checkout: (order: Order) => void
-  addClient: (c: Client) => void
-  updateClient: (c: Client) => void
-  addEmployee: (e: Employee) => void
-  updateEmployee: (e: Employee) => void
+  setCurrency: (currency: string) => void
+  markOrdersSynced: (ids: string[]) => void
+  startShift: (input: { openingFloat: number; openingNote?: string; openedBy: string }) => Shift
+  closeShift: (input: { shiftId: string; closingCount: number; closingNote?: string; closedBy: string }) => Shift | null
 }
 
 const AppContext = createContext<Ctx | null>(null)
@@ -175,11 +206,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!hydrated) return
     savePersistedState({
       products: state.products,
-      clients: state.clients,
-      employees: state.employees,
       orders: state.orders,
+      currency: state.currency,
+      shifts: state.shifts,
+      activeShiftId: state.activeShiftId,
     })
-  }, [state.products, state.clients, state.employees, state.orders, hydrated])
+  }, [state.products, state.orders, state.currency, state.shifts, state.activeShiftId, hydrated])
 
   const value = useMemo<Ctx>(() => ({
     ...state,
@@ -187,11 +219,42 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     removeLine: (lineId) => dispatch({ type: 'cart/removeLine', id: lineId }),
     setQty: (lineId, qty) => dispatch({ type: 'cart/setQty', id: lineId, qty }),
     updateExclusions: (lineId, exclusions) => dispatch({ type: 'cart/updateExclusions', id: lineId, exclusions }),
-    checkout: (order) => dispatch({ type: 'cart/checkout', order }),
-    addClient: (c) => dispatch({ type: 'client/add', client: c }),
-    updateClient: (c) => dispatch({ type: 'client/update', client: c }),
-    addEmployee: (e) => dispatch({ type: 'employee/add', employee: e }),
-    updateEmployee: (e) => dispatch({ type: 'employee/update', employee: e }),
+    checkout: (order) => {
+      const shiftId = state.activeShiftId ?? order.shiftId ?? null
+      dispatch({ type: 'cart/checkout', order: shiftId ? { ...order, shiftId } : order })
+    },
+    setCurrency: (currency) => dispatch({ type: 'settings/setCurrency', currency }),
+    markOrdersSynced: (ids) => dispatch({ type: 'orders/markSynced', ids }),
+    startShift: ({ openingFloat, openingNote, openedBy }) => {
+      const id = crypto.randomUUID()
+      const openedAt = new Date().toISOString()
+      const shift: Shift = { id, openedAt, openedBy, openingFloat, openingNote }
+      dispatch({ type: 'shift/start', shift })
+      return shift
+    },
+    closeShift: ({ shiftId, closingCount, closingNote, closedBy }) => {
+      const shift = state.shifts.find((s) => s.id === shiftId)
+      if (!shift) return null
+      const closedAt = new Date().toISOString()
+      const shiftOrders = state.orders.filter((order) => order.shiftId === shiftId)
+      const systemExpectedRaw = shift.openingFloat + shiftOrders.reduce((sum, order) => sum + order.totals.total, 0)
+      const systemExpected = Math.round(systemExpectedRaw * 100) / 100
+      const variance = Math.round((closingCount - systemExpected) * 100) / 100
+      dispatch({
+        type: 'shift/close',
+        shiftId,
+        payload: { closedAt, closedBy, closingCount, systemExpected, variance, closingNote },
+      })
+      return {
+        ...shift,
+        closedAt,
+        closedBy,
+        closingCount,
+        systemExpected,
+        variance,
+        closingNote,
+      }
+    },
   }), [state])
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

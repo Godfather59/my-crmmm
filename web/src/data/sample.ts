@@ -1,4 +1,4 @@
-import type { Client, Employee, Order, Product } from '../context/AppContext'
+import type { Order, Product } from '../context/AppContext'
 
 export const sampleProducts: Product[] = [
   { id: 'p1', name: 'Espresso', price: 3.0, stock: 80, category: 'Beverage', ingredients: ['Espresso Shot'] },
@@ -7,33 +7,6 @@ export const sampleProducts: Product[] = [
   { id: 'p4', name: 'Blueberry Muffin', price: 2.5, stock: 20, category: 'Bakery', ingredients: ['Wheat', 'Blueberries', 'Sugar'] },
   { id: 'p5', name: 'Croissant', price: 2.8, stock: 12, category: 'Bakery', ingredients: ['Wheat', 'Butter'] },
   { id: 'p6', name: 'Bagel', price: 2.2, stock: 5, category: 'Bakery', ingredients: ['Wheat', 'Sesame'] },
-]
-
-export const sampleClients: Client[] = [
-  {
-    id: 'c1',
-    name: 'Jane Cooper',
-    email: 'jane@example.com',
-    phone: '+1 555-0101',
-    loyaltyPoints: 120,
-    orders: [
-      { id: 'o2001', total: 9.42, date: '2025-09-10' },
-      { id: 'o2004', total: 13.48, date: '2025-09-13' },
-    ],
-  },
-  {
-    id: 'c2',
-    name: 'John Carter',
-    email: 'john@example.com',
-    phone: '+1 555-0102',
-    loyaltyPoints: 45,
-    orders: [{ id: 'o2005', total: 12.2, date: '2025-09-14' }],
-  },
-]
-
-export const sampleEmployees: Employee[] = [
-  { id: 'e1', name: 'Alex Johnson', role: 'Manager' },
-  { id: 'e2', name: 'Sam Lee', role: 'Cashier' },
 ]
 
 export const sampleOrders: Order[] = [
@@ -46,6 +19,8 @@ export const sampleOrders: Order[] = [
       { productId: 'p5', name: 'Croissant', price: 2.8, qty: 1 },
     ],
     totals: { subtotal: 8.8, tax: 0.62, total: 9.42 },
+    syncedAt: '2025-09-10T09:16:00.000Z',
+    shiftId: null,
   },
   {
     id: 'o2002',
@@ -55,6 +30,8 @@ export const sampleOrders: Order[] = [
       { productId: 'p4', name: 'Blueberry Muffin', price: 2.5, qty: 2 },
     ],
     totals: { subtotal: 18.5, tax: 1.3, total: 19.8 },
+    syncedAt: '2025-09-11T12:31:00.000Z',
+    shiftId: null,
   },
   {
     id: 'o2003',
@@ -64,6 +41,8 @@ export const sampleOrders: Order[] = [
       { productId: 'p6', name: 'Bagel', price: 2.2, qty: 1 },
     ],
     totals: { subtotal: 10.2, tax: 0.71, total: 10.91 },
+    syncedAt: '2025-09-12T08:06:00.000Z',
+    shiftId: null,
   },
   {
     id: 'o2004',
@@ -75,6 +54,8 @@ export const sampleOrders: Order[] = [
       { productId: 'p5', name: 'Croissant', price: 2.8, qty: 2 },
     ],
     totals: { subtotal: 12.6, tax: 0.88, total: 13.48 },
+    syncedAt: '2025-09-13T14:46:00.000Z',
+    shiftId: null,
   },
   {
     id: 'o2005',
@@ -86,6 +67,8 @@ export const sampleOrders: Order[] = [
       { productId: 'p6', name: 'Bagel', price: 2.2, qty: 2 },
     ],
     totals: { subtotal: 11.4, tax: 0.8, total: 12.2 },
+    syncedAt: '2025-09-14T10:21:00.000Z',
+    shiftId: null,
   },
   {
     id: 'o2006',
@@ -96,6 +79,8 @@ export const sampleOrders: Order[] = [
       { productId: 'p4', name: 'Blueberry Muffin', price: 2.5, qty: 1 },
     ],
     totals: { subtotal: 14.5, tax: 1.02, total: 15.52 },
+    syncedAt: '2025-09-15T16:11:00.000Z',
+    shiftId: null,
   },
   {
     id: 'o2007',
@@ -105,5 +90,7 @@ export const sampleOrders: Order[] = [
       { productId: 'p5', name: 'Croissant', price: 2.8, qty: 1 },
     ],
     totals: { subtotal: 14.8, tax: 1.04, total: 15.84 },
+    syncedAt: '2025-09-16T11:51:00.000Z',
+    shiftId: null,
   },
 ]

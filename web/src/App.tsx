@@ -3,10 +3,7 @@ import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'rea
 import { Sidebar } from './components/Sidebar'
 import { Topbar } from './components/Topbar'
 import { AppProvider } from './context/AppContext'
-import { Dashboard } from './pages/Dashboard'
 import { POS } from './pages/POS'
-import { CRM } from './pages/CRM'
-import { Reports } from './pages/Reports'
 import { motion, AnimatePresence } from 'framer-motion'
 import { LayoutProvider, useLayout } from './context/LayoutContext'
 import { ToastProvider } from './components/ToastProvider'
@@ -27,8 +24,7 @@ function ProtectedRoute({ allowed }: { allowed?: Array<User['role']> }) {
     return <Navigate to="/login" replace state={{ from: location }} />
   }
   if (allowed && !allowed.includes(user.role)) {
-    const fallback = user.role === 'cashier' ? '/pos' : '/'
-    return <Navigate to={fallback} replace />
+    return <Navigate to="/pos" replace />
   }
   return <Outlet />
 }
@@ -94,15 +90,9 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route element={<ProtectedRoute />}>
                   <Route element={<Shell />}>
-                    <Route element={<ProtectedRoute allowed={['admin']} />}>
-                      <Route index element={<PageContainer><Dashboard /></PageContainer>} />
-                      <Route path="crm" element={<PageContainer><CRM /></PageContainer>} />
-                      <Route path="reports" element={<PageContainer><Reports /></PageContainer>} />
-                    </Route>
-                    <Route element={<ProtectedRoute allowed={['admin', 'cashier']} />}>
-                      <Route path="pos" element={<PageContainer><POS /></PageContainer>} />
-                    </Route>
-                    <Route path="*" element={<Navigate to="/" replace />} />
+                    <Route index element={<Navigate to="/pos" replace />} />
+                    <Route path="pos" element={<PageContainer><POS /></PageContainer>} />
+                    <Route path="*" element={<Navigate to="/pos" replace />} />
                   </Route>
                 </Route>
               </Routes>

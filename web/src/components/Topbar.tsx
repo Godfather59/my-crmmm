@@ -1,17 +1,26 @@
 import { Search, Sun, Moon, User2, LogOut, Menu } from 'lucide-react'
 import { Input } from './ui/input'
 import { Button } from './ui/button'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import { useLayout } from '../context/LayoutContext'
+import { useOnlineStatus } from '../hooks/useOnlineStatus'
 
 export function Topbar() {
   const [dark, setDark] = useState<boolean>(() => document.documentElement.classList.contains('dark'))
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
   const { isMobile, setSidebarOpen } = useLayout()
+  const online = useOnlineStatus()
+  const statusClasses = useMemo(
+    () =>
+      online
+        ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-900/20 dark:text-emerald-200'
+        : 'border-amber-300 bg-amber-100 text-amber-800 dark:border-amber-900/60 dark:bg-amber-900/30 dark:text-amber-100',
+    [online],
+  )
 
   useEffect(() => {
     const root = document.documentElement
@@ -44,6 +53,10 @@ export function Topbar() {
         </div>
       </div>
       <div className="flex items-center gap-2">
+        <span className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium ${statusClasses}`}>
+          <span className={`h-2 w-2 rounded-full ${online ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+          {online ? 'Online' : 'Offline'}
+        </span>
         <Button variant="ghost" size="icon" onClick={() => setDark(!dark)} aria-label="Toggle theme">
           {dark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </Button>

@@ -15,12 +15,11 @@ export function Login() {
   const [name, setName] = useState('')
   const [role, setRole] = useState<'admin' | 'cashier'>('admin')
 
-  const redirectTarget = state?.from?.pathname ?? (role === 'cashier' ? '/pos' : '/')
+  const redirectTarget = state?.from?.pathname ?? '/pos'
 
   useEffect(() => {
     if (!user) return
-    const target = user.role === 'cashier' ? '/pos' : '/'
-    navigate(target, { replace: true })
+    navigate('/pos', { replace: true })
   }, [user, navigate])
 
   const handleSubmit = (event: React.FormEvent) => {
